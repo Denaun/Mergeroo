@@ -84,7 +84,7 @@ class Mergeroo
 			# Reading all local import files, excluding the java ones
 			to_import.each do |package|
 				@log.debug "Package required '#{package}'"
-				import_package = "#{base_path}#{package}/*"
+				import_package = "#{base_path}#{package}/*.java"
 
 
 				Dir[ import_package ].each do |package_file|

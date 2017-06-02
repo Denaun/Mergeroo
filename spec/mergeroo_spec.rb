@@ -86,5 +86,16 @@ RSpec.describe Mergeroo, "#merge" do
 			result = Mergeroo.new(:error).merge( test_file )
 			expect( result ).to eq "\n\n\nclass Testaroo {\n}\n\nclass Includaroo {\n}"
 		end
+
+		it "doesn't include gibberish" do
+			not_an_include = "#{test_dir}/includaroo.javaroo"
+			not_a_file = "#{test_dir}/foldaroo"
+			File.write( not_an_include, "wrongaroo" )
+			Dir.mkdir( not_a_file )
+			File.write( test_file, "package testaroo;\n\nclass Testaroo {\n}" )
+
+			result = Mergeroo.new(:error).merge( test_file )
+			expect( result ).to eq "\n\nclass Testaroo {\n}"
+		end
 	end
 end
