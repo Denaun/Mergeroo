@@ -7,6 +7,7 @@
 
 require 'fileutils'
 require 'logger'
+require 'set'
 
 class Mergeroo
 	LOCAL_DIR = "./"
@@ -55,6 +56,7 @@ class Mergeroo
 		elsif !File.file?( filename ) then
 			@log.error "Can't find the file '#{filename}'"
 		else
+			filename = File.expand_path filename
 			# Looking for import in the file
 			header, body = cleanup_file( filename )
 
@@ -65,48 +67,35 @@ class Mergeroo
 			# Creating the base_path of the file, adding a reference to the local
 			# folder if no reference is given
 			base_path = File.dirname( filename )
-			pre_base = ( base_path.start_with?( "/", "./", "../" ) ? "" : LOCAL_DIR ) 
-			base_path = "#{pre_base}#{base_path}"
 
 			# Creating an array containing the imports to do
 			to_import = Array.new
 			# Self package
-			to_import.push( File.read( filename ).scan( /package (.*);/ ).flatten.first.concat( ".*" ) )
+			to_import << File.read( filename ).scan( /package (.*);/ )
 			# Imports
-			to_import.push( File.read( filename ).scan( /import ((?!java).*);/ ) )
+			to_import << File.read( filename ).scan( /import ((?!java).*)\.(?:\*|[^.]*);/ ) 
 			# Transforming info in file paths
-			to_import = to_import.flatten.map{ |x| x.gsub( ".", "/" ).concat( ".java" ) }
+			to_import = to_import.flatten.to_set.map{ |x| x.gsub( ".", "/" ) }
 
 			# Taking the real base path knowing from where I am starting using the
 			# package information
-			base_path = base_path[ 0...base_path.index( File.dirname( to_import[ 0 ] ) ) ]
+			base_path = base_path[ 0...base_path.index( to_import[ 0 ] ) ]
 
 			# Reading all local import files, excluding the java ones
-			to_import.each do |file|
-				import_filename = "#{base_path}#{file}"
+			to_import.each do |package|
+				@log.debug "Package required '#{package}'"
+				import_package = "#{base_path}#{package}/*"
 
-				# Checking if all names are specified or if the whole package is
-				# required
-				if import_filename.include?( "*" ) then
-					@log.debug "Full package required '#{import_filename}'"
 
-					Dir[ import_filename ].each do |package_file|
-						# Excluding the file received as input to the list of imports
-						if package_file != "#{pre_base}#{filename}" then
-							h, b = include_file( package_file )
-							header += h
-							body += b
-							@log.debug "\tAdded '#{File.basename( package_file )}'"
-						end
+				Dir[ import_package ].each do |package_file|
+					# Excluding the file received as input to the list of imports
+					if package_file != filename then
+						h, b = include_file( package_file )
+						header += h
+						body += b
+						@log.debug "Added '#{File.basename( package_file )}'"
 					end
-				else
-					# It is a single file, I will include it
-					h, b = include_file( import_filename )
-					header += h
-					body += b
-					@log.debug "\tAdded '#{File.basename( import_filename )}'"
 				end
-
 			end
 
 			# Output everything to stdout, let the user redirect to file.
