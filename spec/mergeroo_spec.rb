@@ -77,5 +77,14 @@ RSpec.describe Mergeroo, "#merge" do
 			result = Mergeroo.new(:error).merge( test_file )
 			expect( result ).to eq "import java.io.*;\nimport java.io.*;\n\n\nclass Testaroo {\n}\n\nclass Includaroo {\n}"
 		end
+
+		it "doesn't include the same file twice" do
+			test_include = "#{test_dir}/includaroo.java"
+			File.write( test_file, "package testaroo;\n\nimport testaroo.Testaroo;\n\nclass Testaroo {\n}" )
+			File.write( test_include, "package testaroo;\n\nclass Includaroo {\n}" )
+
+			result = Mergeroo.new(:error).merge( test_file )
+			expect( result ).to eq "\n\n\nclass Testaroo {\n}\n\nclass Includaroo {\n}"
+		end
 	end
 end
