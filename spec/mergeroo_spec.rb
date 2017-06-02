@@ -25,7 +25,7 @@ RSpec.describe Mergeroo, "#merge" do
 			File.write( test_file, "package testaroo;\nimport java.io.*;\n\nclass Testaroo {\n}" )
 
 			result = Mergeroo.new(:error).merge( test_file )
-			expect( result ).to eq "\nimport java.io.*;\n\nclass Testaroo {\n}"
+			expect( result ).to eq "import java.io.*;\n\n\nclass Testaroo {\n}"
 		end
 
 		it "preserves the class' publicness" do
@@ -75,7 +75,7 @@ RSpec.describe Mergeroo, "#merge" do
 			File.write( test_include, "package testaroo;\nimport java.io.*;\n\nclass Includaroo {\n}" )
 
 			result = Mergeroo.new(:error).merge( test_file )
-			expect( result ).to eq "\nimport java.io.*;\nimport java.io.*\n\nclass Testaroo {\n}\n\nclass Includaroo {\n}"
+			expect( result ).to eq "import java.io.*;\nimport java.io.*;\n\n\nclass Testaroo {\n}\n\nclass Includaroo {\n}"
 		end
 	end
 end

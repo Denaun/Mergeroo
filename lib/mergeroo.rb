@@ -16,31 +16,32 @@ class Mergeroo
 	end
 
 	def cleanup_file( filename )
-		result = "" 
+		header = ""
+		body = "" 
 		# Removing the import lines from the result 
 		File.foreach( filename ) do |line| 
 			# Excluding only the local imports 
 			if line.include?( "import" ) then 
 				if line.include?( " java." ) then 
-					result += line 
+					header += line 
 				end 
 			else 
-				result += line 
+				body += line 
 			end 
 		end 
-		result.gsub!( /^package .*/, "" )
-		return result 
+		body.gsub!( /^package .*/, "" )
+		return header, body 
 	end
 
 	def include_file( filename )
 		# Checking if the file to be imported is correctly parsed or if it
 		# exists
 		if File.file?( filename ) then
-			content = cleanup_file( filename )
+			header, body = cleanup_file( filename )
 
-			content.gsub!( /public (abstract )?(class|enum|interface)/, '\1\2' )
+			body.gsub!( /public (abstract )?(class|enum|interface)/, '\1\2' )
 
-			return content
+			return header, body
 		else
 			@log.fatal "Problem with an import file '#{filename}'"
 			exit
@@ -55,7 +56,7 @@ class Mergeroo
 			@log.error "Can't find the file '#{filename}'"
 		else
 			# Looking for import in the file
-			result = cleanup_file( filename )
+			header, body = cleanup_file( filename )
 
 			# Adding the file in the same package as the file submitted
 			# Since the file is part of only one package, I take the first item from the
@@ -92,13 +93,17 @@ class Mergeroo
 					Dir[ import_filename ].each do |package_file|
 						# Excluding the file received as input to the list of imports
 						if package_file != "#{pre_base}#{filename}" then
-							result += include_file( package_file )
+							h, b = include_file( package_file )
+							header += h
+							body += b
 							@log.debug "\tAdded '#{File.basename( package_file )}'"
 						end
 					end
 				else
 					# It is a single file, I will include it
-					result += include_file( import_filename )
+					h, b = include_file( import_filename )
+					header += h
+					body += b
 					@log.debug "\tAdded '#{File.basename( import_filename )}'"
 				end
 
@@ -106,7 +111,7 @@ class Mergeroo
 
 			# Output everything to stdout, let the user redirect to file.
 			@log.info "Mergoo'd file (๑˃̵ᴗ˂̵)و"
-			return result
+			return header + body
 		end
 	end
 end
